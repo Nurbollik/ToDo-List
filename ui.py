@@ -1,10 +1,144 @@
 import customtkinter as ctk
 import os
+import calendar
 from datetime import datetime
 from PIL import Image
 
 from config import COLORS, BADGES
 from data_manager import load_data, save_data
+
+class CalendarWindow(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Календарь событий")
+        self.geometry("600x650")
+        self.configure(fg_color=COLORS["bg"])
+        self.transient(parent)
+        self.grab_set()
+
+        self.parent = parent
+        self.now = datetime.now()
+        self.view_year = self.now.year
+        self.view_month = self.now.month
+
+        self.font_main = ctk.CTkFont(family="Segoe UI", size=14)
+        self.font_bold = ctk.CTkFont(family="Segoe UI", size=16, weight="bold")
+
+        self._build_calendar_ui()
+
+        self.bind("<MouseWheel>", self.on_mousewheel)
+        self.bind("<Button-4>", self.on_mousewheel)
+        self.bind("<Button-5>", self.on_mousewheel)
+
+    def on_mousewheel(self, event):
+        if hasattr(event, "delta") and event.delta != 0:
+            if event.delta > 0:
+                self.prev_month()
+            else:
+                self.next_month()
+        elif hasattr(event, "num"):
+            if event.num == 4:
+                self.prev_month()
+            elif event.num == 5:
+                self.next_month()
+
+    def _build_calendar_ui(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        header = ctk.CTkFrame(self, fg_color="transparent")
+        header.pack(fill="x", padx=20, pady=20)
+
+        prev_btn = ctk.CTkButton(
+            header, text="<", width=40, fg_color=COLORS["surface"],
+            text_color=COLORS["text_main"], hover_color=COLORS["border"], command=self.prev_month
+        )
+        prev_btn.pack(side="left")
+
+        month_name = self.get_month_name(self.view_month)
+        self.title_label = ctk.CTkLabel(
+            header, text=f"{month_name} {self.view_year}",
+            font=self.font_bold, text_color=COLORS["text_main"]
+        )
+        self.title_label.pack(side="left", expand=True)
+
+        next_btn = ctk.CTkButton(
+            header, text=">", width=40, fg_color=COLORS["surface"],
+            text_color=COLORS["text_main"], hover_color=COLORS["border"], command=self.next_month
+        )
+        next_btn.pack(side="right")
+
+        days_frame = ctk.CTkFrame(self, fg_color="transparent")
+        days_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        week_days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+        for i in range(len(week_days)):
+            days_frame.grid_columnconfigure(i, weight=1)
+            lbl = ctk.CTkLabel(days_frame, text=week_days[i], font=self.font_main, text_color=COLORS["text_muted"])
+            lbl.grid(row=0, column=i, pady=10)
+
+        month_calendar = calendar.monthcalendar(self.view_year, self.view_month)
+        
+        row_idx = 1
+        for week in month_calendar:
+            for col_idx in range(7):
+                day = week[col_idx]
+                
+                if day == 0:
+                    dummy = ctk.CTkLabel(days_frame, text="")
+                    dummy.grid(row=row_idx, column=col_idx)
+                else:
+                    self._create_day_button(days_frame, day, row_idx, col_idx)
+            row_idx = row_idx + 1
+
+    def _create_day_button(self, container, day, row, col):
+        btn_bg = COLORS["surface"]
+        btn_text = COLORS["text_main"]
+        border_col = COLORS["border"]
+
+        if day == self.now.day:
+            if self.view_month == self.now.month:
+                if self.view_year == self.now.year:
+                    border_col = COLORS["primary"]
+
+        btn = ctk.CTkButton(
+            container, text=str(day), fg_color=btn_bg, text_color=btn_text,
+            border_width=1, border_color=border_col, hover_color=COLORS["bg"],
+            height=60, font=self.font_main,
+            command=lambda d=day: self.select_date(d)
+        )
+        btn.grid(row=row, column=col, padx=2, pady=2, sticky="nsew")
+
+    def select_date(self, day):
+        date_str = f"📅 {day:02d}.{self.view_month:02d}.{self.view_year}"
+        
+        if date_str not in self.parent.thoughts:
+            self.parent.thoughts.append(date_str)
+            self.parent._save_state()
+            
+        self.parent.select_thought(date_str)
+        self.destroy()
+
+    def prev_month(self):
+        self.view_month = self.view_month - 1
+        if self.view_month < 1:
+            self.view_month = 12
+            self.view_year = self.view_year - 1
+        self._build_calendar_ui()
+
+    def next_month(self):
+        self.view_month = self.view_month + 1
+        if self.view_month > 12:
+            self.view_month = 1
+            self.view_year = self.view_year + 1
+        self._build_calendar_ui()
+
+    def get_month_name(self, n):
+        months = [
+            "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+            "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+        ]
+        return months[n-1]
 
 class EditTaskDialog(ctk.CTkToplevel):
     def __init__(self, parent, current_text):
@@ -37,8 +171,8 @@ class EditTaskDialog(ctk.CTkToplevel):
         btn_frame.pack(fill="x", padx=20)
 
         cancel_btn = ctk.CTkButton(
-            btn_frame, text="Отмена", fg_color="#F3F4F6", text_color="#4B5563",
-            hover_color="#E5E7EB", font=self.font_main, command=self.cancel
+            btn_frame, text="Отмена", fg_color=COLORS["surface"], text_color=COLORS["text_main"],
+            hover_color=COLORS["border"], font=self.font_main, border_width=1, border_color=COLORS["border"], command=self.cancel
         )
         cancel_btn.pack(side="right", padx=(10, 0))
 
@@ -62,13 +196,20 @@ class TodoApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        self.data = load_data()
+        
+        if "theme" in self.data:
+            self.theme = self.data["theme"]
+        else:
+            self.theme = "light"
+            
+        ctk.set_appearance_mode(self.theme)
+
         self.title("To-DO: Мысли и Задачи")
         self.geometry("800x750")
         self.minsize(700, 600)
         self.configure(fg_color=COLORS["bg"])
 
-        self.data = load_data()
-        
         if "thoughts" in self.data:
             self.thoughts = self.data["thoughts"]
         else:
@@ -132,6 +273,14 @@ class TodoApp(ctk.CTk):
             fg_color=COLORS["primary"], hover_color=COLORS["primary_hover"], command=self.add_thought
         ).pack(side="right", padx=(5, 0))
 
+        cal_btn = ctk.CTkButton(
+            self.sidebar_frame, text="📅 Календарь", fg_color=COLORS["surface"],
+            text_color=COLORS["primary"], border_width=1, border_color=COLORS["primary"],
+            hover_color=COLORS["bg"], font=self.font_bold, height=45,
+            command=self.open_calendar
+        )
+        cal_btn.pack(fill="x", padx=20, pady=(0, 20), side="bottom")
+
         self.main_area = ctk.CTkFrame(self, fg_color="transparent")
         self.main_area.grid(row=0, column=1, sticky="nsew")
 
@@ -143,6 +292,18 @@ class TodoApp(ctk.CTk):
             font=ctk.CTkFont(family="Segoe UI", size=24, weight="bold"), text_color=COLORS["text_main"]
         )
         self.header_title.pack(side="left")
+
+        if self.theme == "light":
+            theme_text = "🌙"
+        else:
+            theme_text = "☀️"
+            
+        self.theme_btn = ctk.CTkButton(
+            header_frame, text=theme_text, width=35, height=35,
+            fg_color="transparent", text_color=COLORS["text_main"], hover_color=COLORS["border"],
+            font=ctk.CTkFont(size=20), command=self.toggle_theme
+        )
+        self.theme_btn.pack(side="right", padx=(15, 0))
 
         self.counter_label = ctk.CTkLabel(header_frame, text="", text_color=COLORS["text_muted"], font=self.font_main)
         self.counter_label.pack(side="right", pady=(5, 0))
@@ -170,7 +331,7 @@ class TodoApp(ctk.CTk):
         self.priority_menu = ctk.CTkOptionMenu(
             input_frame, values=["Срочная", "Обычная", "Низкая"], variable=self.priority_var,
             font=self.font_main, width=120, height=40, corner_radius=8,
-            fg_color=COLORS["surface"], button_color=COLORS["surface"], button_hover_color="#F3F4F6", text_color=COLORS["text_main"]
+            fg_color=COLORS["surface"], button_color=COLORS["surface"], button_hover_color=COLORS["bg"], text_color=COLORS["text_main"]
         )
         self.priority_menu.pack(side="left", padx=(0, 10))
 
@@ -188,10 +349,22 @@ class TodoApp(ctk.CTk):
 
         clear_btn = ctk.CTkButton(
             bottom_frame, text="Очистить выполненные", fg_color=COLORS["surface"], text_color=COLORS["primary"],
-            border_width=1, border_color=COLORS["primary"], hover_color="#ECFDF5",
+            border_width=1, border_color=COLORS["primary"], hover_color=COLORS["bg"],
             font=self.font_bold, height=45, corner_radius=8, command=self.clear_done
         )
         clear_btn.pack(fill="x")
+
+    def toggle_theme(self):
+        if self.theme == "light":
+            self.theme = "dark"
+            self.theme_btn.configure(text="☀️")
+        else:
+            self.theme = "light"
+            self.theme_btn.configure(text="🌙")
+            
+        ctk.set_appearance_mode(self.theme)
+        self.data["theme"] = self.theme
+        self._save_state()
 
     def _save_state(self):
         self.data["thoughts"] = self.thoughts
@@ -228,6 +401,9 @@ class TodoApp(ctk.CTk):
                     hover_color=COLORS["danger_bg"], command=lambda t=thought: self.delete_thought(t)
                 )
                 del_btn.pack(side="right", padx=5)
+
+    def open_calendar(self):
+        CalendarWindow(self)
 
     def select_thought(self, thought):
         self.current_thought = thought
@@ -469,7 +645,7 @@ class TodoApp(ctk.CTk):
 
         edit_btn = ctk.CTkButton(
             frame, text="✎", width=30, height=30, fg_color="transparent", text_color=COLORS["text_muted"],
-            hover_color="#F3F4F6", font=self.font_main, command=lambda tid=task["id"]: self.edit_task(tid)
+            hover_color=COLORS["border"], font=self.font_main, command=lambda tid=task["id"]: self.edit_task(tid)
         )
         edit_btn.pack(side="right", padx=2)
 

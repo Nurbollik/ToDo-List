@@ -2,23 +2,24 @@ import os
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "tasks.json")
 
+# Формат: ("Цвет в светлой теме", "Цвет в темной теме")
 COLORS = {
-    "bg": "#F9FAFB",
-    "surface": "#FFFFFF",
-    "primary": "#34D399",
-    "primary_hover": "#10B981",
-    "text_main": "#1F2937",
-    "text_muted": "#9CA3AF",
-    "danger": "#F87171",
-    "danger_bg": "#FEE2E2",
-    "border": "#E5E7EB",
-    "sidebar_active": "#ECFDF5",
-    "warning": "#F59E0B",
-    "warning_bg": "#FEF3C7"
+    "bg": ("#F9FAFB", "#121212"),
+    "surface": ("#FFFFFF", "#1E1E1E"),
+    "primary": ("#34D399", "#3B82F6"),        # Зеленый / Синий
+    "primary_hover": ("#10B981", "#60A5FA"),  # Темно-зеленый / Голубой
+    "text_main": ("#1F2937", "#F3F4F6"),
+    "text_muted": ("#9CA3AF", "#9CA3AF"),
+    "danger": ("#F87171", "#EF4444"),
+    "danger_bg": ("#FEE2E2", "#451A1A"),
+    "border": ("#E5E7EB", "#333333"),
+    "sidebar_active": ("#ECFDF5", "#172554"), # Светло-зеленый / Темно-синий
+    "warning": ("#F59E0B", "#F59E0B"),
+    "warning_bg": ("#FEF3C7", "#78350F")
 }
 
 BADGES = {
-    "Срочная": {"bg": "#FEE2E2", "text": "#EF4444"},
-    "Обычная": {"bg": "#F3F4F6", "text": "#6B7280"},
-    "Низкая": {"bg": "#D1FAE5", "text": "#059669"}
+    "Срочная": {"bg": ("#FEE2E2", "#451A1A"), "text": ("#EF4444", "#FCA5A5")},
+    "Обычная": {"bg": ("#F3F4F6", "#333333"), "text": ("#6B7280", "#D1D5DB")},
+    "Низкая": {"bg": ("#D1FAE5", "#064E3B"), "text": ("#059669", "#6EE7B7")}
 }
