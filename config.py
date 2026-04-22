@@ -2,18 +2,17 @@ import os
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "tasks.json")
 
-# Формат: ("Цвет в светлой теме", "Цвет в темной теме")
 COLORS = {
     "bg": ("#F9FAFB", "#121212"),
     "surface": ("#FFFFFF", "#1E1E1E"),
-    "primary": ("#34D399", "#3B82F6"),        # Зеленый / Синий
-    "primary_hover": ("#10B981", "#60A5FA"),  # Темно-зеленый / Голубой
+    "primary": ("#34D399", "#3B82F6"),        
+    "primary_hover": ("#10B981", "#60A5FA"),  
     "text_main": ("#1F2937", "#F3F4F6"),
     "text_muted": ("#9CA3AF", "#9CA3AF"),
     "danger": ("#F87171", "#EF4444"),
     "danger_bg": ("#FEE2E2", "#451A1A"),
     "border": ("#E5E7EB", "#333333"),
-    "sidebar_active": ("#ECFDF5", "#172554"), # Светло-зеленый / Темно-синий
+    "sidebar_active": ("#ECFDF5", "#172554"), 
     "warning": ("#F59E0B", "#F59E0B"),
     "warning_bg": ("#FEF3C7", "#78350F")
 }

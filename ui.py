@@ -18,122 +18,134 @@ class CalendarWindow(ctk.CTkToplevel):
 
         self.parent = parent
         self.now = datetime.now()
-        self.view_year = self.now.year
-        self.view_month = self.now.month
+        self.viewYear = self.now.year
+        self.viewMonth = self.now.month
 
-        self.font_main = ctk.CTkFont(family="Segoe UI", size=14)
-        self.font_bold = ctk.CTkFont(family="Segoe UI", size=16, weight="bold")
+        # Настройка шрифтов
+        self.fontMain = ctk.CTkFont(family="Segoe UI", size=14)
+        self.fontBold = ctk.CTkFont(family="Segoe UI", size=16, weight="bold")
 
-        self._build_calendar_ui()
+        self.buildCalendarUi()
 
-        self.bind("<MouseWheel>", self.on_mousewheel)
-        self.bind("<Button-4>", self.on_mousewheel)
-        self.bind("<Button-5>", self.on_mousewheel)
+        # Привязка скролла мыши
+        self.bind("<MouseWheel>", self.onMouseWheel)
+        self.bind("<Button-4>", self.onMouseWheel)
+        self.bind("<Button-5>", self.onMouseWheel)
 
-    def on_mousewheel(self, event):
+    def onMouseWheel(self, event):
+        # Проверка направления прокрутки колесика
         if hasattr(event, "delta") and event.delta != 0:
             if event.delta > 0:
-                self.prev_month()
+                self.prevMonth()
             else:
-                self.next_month()
+                self.nextMonth()
         elif hasattr(event, "num"):
             if event.num == 4:
-                self.prev_month()
+                self.prevMonth()
             elif event.num == 5:
-                self.next_month()
+                self.nextMonth()
 
-    def _build_calendar_ui(self):
+    def buildCalendarUi(self):
+        # Очистка окна перед обновлением
         for widget in self.winfo_children():
             widget.destroy()
 
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=20)
+        headerFrame = ctk.CTkFrame(self, fg_color="transparent")
+        headerFrame.pack(fill="x", padx=20, pady=20)
 
-        prev_btn = ctk.CTkButton(
-            header, text="<", width=40, fg_color=COLORS["surface"],
-            text_color=COLORS["text_main"], hover_color=COLORS["border"], command=self.prev_month
+        # Кнопка "назад"
+        prevBtn = ctk.CTkButton(
+            headerFrame, text="<", width=40, fg_color=COLORS["surface"],
+            text_color=COLORS["text_main"], hover_color=COLORS["border"], command=self.prevMonth
         )
-        prev_btn.pack(side="left")
+        prevBtn.pack(side="left")
 
-        month_name = self.get_month_name(self.view_month)
-        self.title_label = ctk.CTkLabel(
-            header, text=f"{month_name} {self.view_year}",
-            font=self.font_bold, text_color=COLORS["text_main"]
+        # Заголовок с названием месяца и года
+        monthName = self.getMonthName(self.viewMonth)
+        self.titleLabel = ctk.CTkLabel(
+            headerFrame, text=f"{monthName} {self.viewYear}",
+            font=self.fontBold, text_color=COLORS["text_main"]
         )
-        self.title_label.pack(side="left", expand=True)
+        self.titleLabel.pack(side="left", expand=True)
 
-        next_btn = ctk.CTkButton(
-            header, text=">", width=40, fg_color=COLORS["surface"],
-            text_color=COLORS["text_main"], hover_color=COLORS["border"], command=self.next_month
+        # Кнопка "вперед"
+        nextBtn = ctk.CTkButton(
+            headerFrame, text=">", width=40, fg_color=COLORS["surface"],
+            text_color=COLORS["text_main"], hover_color=COLORS["border"], command=self.nextMonth
         )
-        next_btn.pack(side="right")
+        nextBtn.pack(side="right")
 
-        days_frame = ctk.CTkFrame(self, fg_color="transparent")
-        days_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        daysFrame = ctk.CTkFrame(self, fg_color="transparent")
+        daysFrame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        week_days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-        for i in range(len(week_days)):
-            days_frame.grid_columnconfigure(i, weight=1)
-            lbl = ctk.CTkLabel(days_frame, text=week_days[i], font=self.font_main, text_color=COLORS["text_muted"])
+        # Отрисовка дней недели
+        weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+        for i in range(len(weekDays)):
+            daysFrame.grid_columnconfigure(i, weight=1)
+            lbl = ctk.CTkLabel(daysFrame, text=weekDays[i], font=self.fontMain, text_color=COLORS["text_muted"])
             lbl.grid(row=0, column=i, pady=10)
 
-        month_calendar = calendar.monthcalendar(self.view_year, self.view_month)
+        monthCalendar = calendar.monthcalendar(self.viewYear, self.viewMonth)
         
-        row_idx = 1
-        for week in month_calendar:
-            for col_idx in range(7):
-                day = week[col_idx]
+        # Отрисовка чисел месяца
+        rowIdx = 1
+        for week in monthCalendar:
+            for colIdx in range(7):
+                day = week[colIdx]
                 
+                # Пустое место, если день не принадлежит месяцу
                 if day == 0:
-                    dummy = ctk.CTkLabel(days_frame, text="")
-                    dummy.grid(row=row_idx, column=col_idx)
+                    dummy = ctk.CTkLabel(daysFrame, text="")
+                    dummy.grid(row=rowIdx, column=colIdx)
                 else:
-                    self._create_day_button(days_frame, day, row_idx, col_idx)
-            row_idx = row_idx + 1
+                    self.createDayButton(daysFrame, day, rowIdx, colIdx)
+            rowIdx = rowIdx + 1
 
-    def _create_day_button(self, container, day, row, col):
-        btn_bg = COLORS["surface"]
-        btn_text = COLORS["text_main"]
-        border_col = COLORS["border"]
+    def createDayButton(self, container, day, row, col):
+        btnBg = COLORS["surface"]
+        btnText = COLORS["text_main"]
+        borderCol = COLORS["border"]
 
+        # Подсветка сегодняшнего дня
         if day == self.now.day:
-            if self.view_month == self.now.month:
-                if self.view_year == self.now.year:
-                    border_col = COLORS["primary"]
+            if self.viewMonth == self.now.month:
+                if self.viewYear == self.now.year:
+                    borderCol = COLORS["primary"]
 
         btn = ctk.CTkButton(
-            container, text=str(day), fg_color=btn_bg, text_color=btn_text,
-            border_width=1, border_color=border_col, hover_color=COLORS["bg"],
-            height=60, font=self.font_main,
-            command=lambda d=day: self.select_date(d)
+            container, text=str(day), fg_color=btnBg, text_color=btnText,
+            border_width=1, border_color=borderCol, hover_color=COLORS["bg"],
+            height=60, font=self.fontMain,
+            command=lambda d=day: self.selectDate(d)
         )
         btn.grid(row=row, column=col, padx=2, pady=2, sticky="nsew")
 
-    def select_date(self, day):
-        date_str = f"📅 {day:02d}.{self.view_month:02d}.{self.view_year}"
+    def selectDate(self, day):
+        # Форматирование даты и добавление как новой мысли
+        dateStr = f"📅 {day:02d}.{self.viewMonth:02d}.{self.viewYear}"
         
-        if date_str not in self.parent.thoughts:
-            self.parent.thoughts.append(date_str)
-            self.parent._save_state()
+        if dateStr not in self.parent.thoughts:
+            self.parent.thoughts.append(dateStr)
+            self.parent.saveState()
             
-        self.parent.select_thought(date_str)
+        self.parent.selectThought(dateStr)
         self.destroy()
 
-    def prev_month(self):
-        self.view_month = self.view_month - 1
-        if self.view_month < 1:
-            self.view_month = 12
-            self.view_year = self.view_year - 1
-        self._build_calendar_ui()
+    def prevMonth(self):
+        self.viewMonth = self.viewMonth - 1
+        if self.viewMonth < 1:
+            self.viewMonth = 12
+            self.viewYear = self.viewYear - 1
+        self.buildCalendarUi()
 
-    def next_month(self):
-        self.view_month = self.view_month + 1
-        if self.view_month > 12:
-            self.view_month = 1
-            self.view_year = self.view_year + 1
-        self._build_calendar_ui()
+    def nextMonth(self):
+        self.viewMonth = self.viewMonth + 1
+        if self.viewMonth > 12:
+            self.viewMonth = 1
+            self.viewYear = self.viewYear + 1
+        self.buildCalendarUi()
 
-    def get_month_name(self, n):
+    def getMonthName(self, n):
         months = [
             "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
             "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
@@ -141,7 +153,7 @@ class CalendarWindow(ctk.CTkToplevel):
         return months[n-1]
 
 class EditTaskDialog(ctk.CTkToplevel):
-    def __init__(self, parent, current_text):
+    def __init__(self, parent, currentText):
         super().__init__(parent)
         self.title("Редактировать задачу")
         self.geometry("450x180")
@@ -151,45 +163,47 @@ class EditTaskDialog(ctk.CTkToplevel):
         self.grab_set()
 
         self.result = None
-        self.font_main = ctk.CTkFont(family="Segoe UI", size=14)
+        self.fontMain = ctk.CTkFont(family="Segoe UI", size=14)
 
+        # Центрирование окна
         self.update_idletasks()
         x = parent.winfo_x() + (parent.winfo_width() // 2) - (450 // 2)
         y = parent.winfo_y() + (parent.winfo_height() // 2) - (180 // 2)
         self.geometry(f"+{x}+{y}")
 
+        # Поле ввода текста
         self.entry = ctk.CTkEntry(
-            self, font=self.font_main, height=40, corner_radius=8,
+            self, font=self.fontMain, height=40, corner_radius=8,
             fg_color=COLORS["surface"], border_color=COLORS["primary"], text_color=COLORS["text_main"]
         )
         self.entry.pack(fill="x", padx=20, pady=(30, 20))
-        self.entry.insert(0, current_text)
+        self.entry.insert(0, currentText)
         self.entry.focus()
-        self.entry.bind("<Return>", lambda e: self.save())
+        self.entry.bind("<Return>", lambda e: self.saveTask())
 
-        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=20)
+        btnFrame = ctk.CTkFrame(self, fg_color="transparent")
+        btnFrame.pack(fill="x", padx=20)
 
-        cancel_btn = ctk.CTkButton(
-            btn_frame, text="Отмена", fg_color=COLORS["surface"], text_color=COLORS["text_main"],
-            hover_color=COLORS["border"], font=self.font_main, border_width=1, border_color=COLORS["border"], command=self.cancel
+        cancelBtn = ctk.CTkButton(
+            btnFrame, text="Отмена", fg_color=COLORS["surface"], text_color=COLORS["text_main"],
+            hover_color=COLORS["border"], font=self.fontMain, border_width=1, border_color=COLORS["border"], command=self.cancelDialog
         )
-        cancel_btn.pack(side="right", padx=(10, 0))
+        cancelBtn.pack(side="right", padx=(10, 0))
 
-        save_btn = ctk.CTkButton(
-            btn_frame, text="Сохранить", fg_color=COLORS["primary"],
+        saveBtn = ctk.CTkButton(
+            btnFrame, text="Сохранить", fg_color=COLORS["primary"],
             hover_color=COLORS["primary_hover"], font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            command=self.save
+            command=self.saveTask
         )
-        save_btn.pack(side="right")
+        saveBtn.pack(side="right")
 
         self.wait_window()
 
-    def save(self):
+    def saveTask(self):
         self.result = self.entry.get().strip()
         self.destroy()
 
-    def cancel(self):
+    def cancelDialog(self):
         self.destroy()
 
 class TodoApp(ctk.CTk):
@@ -198,6 +212,7 @@ class TodoApp(ctk.CTk):
 
         self.data = load_data()
         
+        # Загрузка темы оформления
         if "theme" in self.data:
             self.theme = self.data["theme"]
         else:
@@ -205,303 +220,321 @@ class TodoApp(ctk.CTk):
             
         ctk.set_appearance_mode(self.theme)
 
-        self.title("To-DO: Мысли и Задачи")
+        self.title("Planterra - Планировщик мыслей и задач")
         self.geometry("800x750")
         self.minsize(700, 600)
         self.configure(fg_color=COLORS["bg"])
 
+        # Загрузка списков мыслей
         if "thoughts" in self.data:
             self.thoughts = self.data["thoughts"]
         else:
             self.thoughts = ["Главная мысль"]
             
+        # Загрузка задач
         if "tasks" in self.data:
             self.tasks = self.data["tasks"]
         else:
             self.tasks = []
 
         if len(self.thoughts) > 0:
-            self.current_thought = self.thoughts[0]
+            self.currentThought = self.thoughts[0]
         else:
-            self.current_thought = "Главная мысль"
+            self.currentThought = "Главная мысль"
         
-        max_id = 0
+        # Вычисление следующего ID задачи
+        maxId = 0
         for t in self.tasks:
-            if t["id"] > max_id:
-                max_id = t["id"]
-        self.next_id = max_id + 1
+            if t["id"] > maxId:
+                maxId = t["id"]
+        self.nextId = maxId + 1
         
-        self.filter_mode = "Все"
+        self.filterMode = "Все"
 
-        self.font_main = ctk.CTkFont(family="Segoe UI", size=14)
-        self.font_bold = ctk.CTkFont(family="Segoe UI", size=14, weight="bold")
-        self.font_strike = ctk.CTkFont(family="Segoe UI", size=14, overstrike=True)
-        self.font_small = ctk.CTkFont(family="Segoe UI", size=11)
+        self.fontMain = ctk.CTkFont(family="Segoe UI", size=14)
+        self.fontBold = ctk.CTkFont(family="Segoe UI", size=14, weight="bold")
+        self.fontStrike = ctk.CTkFont(family="Segoe UI", size=14, overstrike=True)
+        self.fontSmall = ctk.CTkFont(family="Segoe UI", size=11)
 
-        self._build_ui()
-        self.render_sidebar()
-        self.render_tasks()
+        self.buildUi()
+        self.renderSidebar()
+        self.renderTasks()
 
-    def _build_ui(self):
+    def buildUi(self):
         self.grid_columnconfigure(0, weight=0, minsize=220)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.sidebar_frame = ctk.CTkFrame(self, fg_color=COLORS["surface"], corner_radius=0, border_width=1, border_color=COLORS["border"])
-        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
+        # Боковая панель
+        self.sidebarFrame = ctk.CTkFrame(self, fg_color=COLORS["surface"], corner_radius=0, border_width=1, border_color=COLORS["border"])
+        self.sidebarFrame.grid(row=0, column=0, sticky="nsew")
 
         ctk.CTkLabel(
-            self.sidebar_frame, text="Мои мысли 🧠", 
+            self.sidebarFrame, text="Planterra 🪷", 
             font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"), text_color=COLORS["text_main"]
         ).pack(pady=(20, 10), padx=20, anchor="w")
 
-        self.thoughts_scroll = ctk.CTkScrollableFrame(self.sidebar_frame, fg_color="transparent")
-        self.thoughts_scroll.pack(fill="both", expand=True, padx=10, pady=10)
+        self.thoughtsScroll = ctk.CTkScrollableFrame(self.sidebarFrame, fg_color="transparent")
+        self.thoughtsScroll.pack(fill="both", expand=True, padx=10, pady=10)
 
-        add_thought_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
-        add_thought_frame.pack(fill="x", padx=10, pady=20)
+        addThoughtFrame = ctk.CTkFrame(self.sidebarFrame, fg_color="transparent")
+        addThoughtFrame.pack(fill="x", padx=10, pady=20)
 
-        self.thought_entry = ctk.CTkEntry(
-            add_thought_frame, placeholder_text="Новая мысль...", height=35,
+        self.thoughtEntry = ctk.CTkEntry(
+            addThoughtFrame, placeholder_text="Новая мысль...", height=35,
             fg_color=COLORS["bg"], border_color=COLORS["border"], text_color=COLORS["text_main"]
         )
-        self.thought_entry.pack(side="left", fill="x", expand=True)
-        self.thought_entry.bind("<Return>", lambda e: self.add_thought())
+        self.thoughtEntry.pack(side="left", fill="x", expand=True)
+        self.thoughtEntry.bind("<Return>", lambda e: self.addThought())
 
         ctk.CTkButton(
-            add_thought_frame, text="+", width=35, height=35, 
-            fg_color=COLORS["primary"], hover_color=COLORS["primary_hover"], command=self.add_thought
+            addThoughtFrame, text="+", width=35, height=35, 
+            fg_color=COLORS["primary"], hover_color=COLORS["primary_hover"], command=self.addThought
         ).pack(side="right", padx=(5, 0))
 
-        cal_btn = ctk.CTkButton(
-            self.sidebar_frame, text="📅 Календарь", fg_color=COLORS["surface"],
+        calBtn = ctk.CTkButton(
+            self.sidebarFrame, text="📅 Календарь", fg_color=COLORS["surface"],
             text_color=COLORS["primary"], border_width=1, border_color=COLORS["primary"],
-            hover_color=COLORS["bg"], font=self.font_bold, height=45,
-            command=self.open_calendar
+            hover_color=COLORS["bg"], font=self.fontBold, height=45,
+            command=self.openCalendar
         )
-        cal_btn.pack(fill="x", padx=20, pady=(0, 20), side="bottom")
+        calBtn.pack(fill="x", padx=20, pady=(0, 20), side="bottom")
 
-        self.main_area = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_area.grid(row=0, column=1, sticky="nsew")
+        # Основная область
+        self.mainArea = ctk.CTkFrame(self, fg_color="transparent")
+        self.mainArea.grid(row=0, column=1, sticky="nsew")
 
-        header_frame = ctk.CTkFrame(self.main_area, fg_color="transparent")
-        header_frame.pack(fill="x", padx=20, pady=(20, 10))
+        headerFrame = ctk.CTkFrame(self.mainArea, fg_color="transparent")
+        headerFrame.pack(fill="x", padx=20, pady=(20, 10))
 
-        self.header_title = ctk.CTkLabel(
-            header_frame, text=self.current_thought,
+        self.headerTitle = ctk.CTkLabel(
+            headerFrame, text=self.currentThought,
             font=ctk.CTkFont(family="Segoe UI", size=24, weight="bold"), text_color=COLORS["text_main"]
         )
-        self.header_title.pack(side="left")
+        self.headerTitle.pack(side="left")
 
+        # Определение иконки для темы
         if self.theme == "light":
-            theme_text = "🌙"
+            themeText = "🌙"
         else:
-            theme_text = "☀️"
+            themeText = "☀️"
             
-        self.theme_btn = ctk.CTkButton(
-            header_frame, text=theme_text, width=35, height=35,
+        self.themeBtn = ctk.CTkButton(
+            headerFrame, text=themeText, width=35, height=35,
             fg_color="transparent", text_color=COLORS["text_main"], hover_color=COLORS["border"],
-            font=ctk.CTkFont(size=20), command=self.toggle_theme
+            font=ctk.CTkFont(size=20), command=self.toggleTheme
         )
-        self.theme_btn.pack(side="right", padx=(15, 0))
+        self.themeBtn.pack(side="right", padx=(15, 0))
 
-        self.counter_label = ctk.CTkLabel(header_frame, text="", text_color=COLORS["text_muted"], font=self.font_main)
-        self.counter_label.pack(side="right", pady=(5, 0))
+        self.counterLabel = ctk.CTkLabel(headerFrame, text="", text_color=COLORS["text_muted"], font=self.fontMain)
+        self.counterLabel.pack(side="right", pady=(5, 0))
 
-        self.filter_var = ctk.StringVar(value="Все")
-        self.filter_seg = ctk.CTkSegmentedButton(
-            self.main_area, values=["Все", "Активные", "Выполненные"], variable=self.filter_var,
-            command=self.set_filter, font=self.font_main, corner_radius=8,
+        # Фильтры задач
+        self.filterVar = ctk.StringVar(value="Все")
+        self.filterSeg = ctk.CTkSegmentedButton(
+            self.mainArea, values=["Все", "Активные", "Выполненные"], variable=self.filterVar,
+            command=self.setFilter, font=self.fontMain, corner_radius=8,
             fg_color=COLORS["surface"], selected_color=COLORS["primary"],
             selected_hover_color=COLORS["primary_hover"], text_color=COLORS["text_main"]
         )
-        self.filter_seg.pack(fill="x", padx=20, pady=(0, 15))
+        self.filterSeg.pack(fill="x", padx=20, pady=(0, 15))
 
-        input_frame = ctk.CTkFrame(self.main_area, fg_color="transparent")
-        input_frame.pack(fill="x", padx=20, pady=(0, 15))
+        # Ввод новой задачи
+        inputFrame = ctk.CTkFrame(self.mainArea, fg_color="transparent")
+        inputFrame.pack(fill="x", padx=20, pady=(0, 15))
 
-        self.entry = ctk.CTkEntry(
-            input_frame, placeholder_text="Что нужно сделать?", font=self.font_main, height=40,
+        self.taskEntry = ctk.CTkEntry(
+            inputFrame, placeholder_text="Что нужно сделать?", font=self.fontMain, height=40,
             corner_radius=8, fg_color=COLORS["surface"], border_color=COLORS["border"], text_color=COLORS["text_main"]
         )
-        self.entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
-        self.entry.bind("<Return>", lambda e: self.add_task())
+        self.taskEntry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.taskEntry.bind("<Return>", lambda e: self.addTask())
 
-        self.priority_var = ctk.StringVar(value="Обычная")
-        self.priority_menu = ctk.CTkOptionMenu(
-            input_frame, values=["Срочная", "Обычная", "Низкая"], variable=self.priority_var,
-            font=self.font_main, width=120, height=40, corner_radius=8,
+        self.priorityVar = ctk.StringVar(value="Обычная")
+        self.priorityMenu = ctk.CTkOptionMenu(
+            inputFrame, values=["Срочная", "Обычная", "Низкая"], variable=self.priorityVar,
+            font=self.fontMain, width=120, height=40, corner_radius=8,
             fg_color=COLORS["surface"], button_color=COLORS["surface"], button_hover_color=COLORS["bg"], text_color=COLORS["text_main"]
         )
-        self.priority_menu.pack(side="left", padx=(0, 10))
+        self.priorityMenu.pack(side="left", padx=(0, 10))
 
-        add_btn = ctk.CTkButton(
-            input_frame, text="+", font=ctk.CTkFont(size=20, weight="bold"), width=40, height=40,
-            corner_radius=8, fg_color=COLORS["primary"], hover_color=COLORS["primary_hover"], command=self.add_task
+        addBtn = ctk.CTkButton(
+            inputFrame, text="+", font=ctk.CTkFont(size=20, weight="bold"), width=40, height=40,
+            corner_radius=8, fg_color=COLORS["primary"], hover_color=COLORS["primary_hover"], command=self.addTask
         )
-        add_btn.pack(side="left")
+        addBtn.pack(side="left")
 
-        self.scrollable_frame = ctk.CTkScrollableFrame(self.main_area, fg_color="transparent")
-        self.scrollable_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        # Список задач
+        self.scrollableFrame = ctk.CTkScrollableFrame(self.mainArea, fg_color="transparent")
+        self.scrollableFrame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
-        bottom_frame = ctk.CTkFrame(self.main_area, fg_color="transparent")
-        bottom_frame.pack(fill="x", padx=20, pady=(0, 20))
+        bottomFrame = ctk.CTkFrame(self.mainArea, fg_color="transparent")
+        bottomFrame.pack(fill="x", padx=20, pady=(0, 20))
 
-        clear_btn = ctk.CTkButton(
-            bottom_frame, text="Очистить выполненные", fg_color=COLORS["surface"], text_color=COLORS["primary"],
+        clearBtn = ctk.CTkButton(
+            bottomFrame, text="Очистить выполненные", fg_color=COLORS["surface"], text_color=COLORS["primary"],
             border_width=1, border_color=COLORS["primary"], hover_color=COLORS["bg"],
-            font=self.font_bold, height=45, corner_radius=8, command=self.clear_done
+            font=self.fontBold, height=45, corner_radius=8, command=self.clearDoneTasks
         )
-        clear_btn.pack(fill="x")
+        clearBtn.pack(fill="x")
 
-    def toggle_theme(self):
+    def toggleTheme(self):
+        # Изменение темы и иконки
         if self.theme == "light":
             self.theme = "dark"
-            self.theme_btn.configure(text="☀️")
+            self.themeBtn.configure(text="☀️")
         else:
             self.theme = "light"
-            self.theme_btn.configure(text="🌙")
+            self.themeBtn.configure(text="🌙")
             
         ctk.set_appearance_mode(self.theme)
         self.data["theme"] = self.theme
-        self._save_state()
+        self.saveState()
 
-    def _save_state(self):
+    def saveState(self):
         self.data["thoughts"] = self.thoughts
         self.data["tasks"] = self.tasks
         save_data(self.data)
 
-    def render_sidebar(self):
-        for widget in self.thoughts_scroll.winfo_children():
+    def renderSidebar(self):
+        # Очистка и отрисовка бокового меню
+        for widget in self.thoughtsScroll.winfo_children():
             widget.destroy()
 
         for thought in self.thoughts:
-            if thought == self.current_thought:
-                bg_color = COLORS["sidebar_active"]
-                text_color = COLORS["primary"]
-                font = self.font_bold
+            # Настройка цвета для выбранной мысли
+            if thought == self.currentThought:
+                bgColor = COLORS["sidebar_active"]
+                textColor = COLORS["primary"]
+                fontUsed = self.fontBold
             else:
-                bg_color = "transparent"
-                text_color = COLORS["text_main"]
-                font = self.font_main
+                bgColor = "transparent"
+                textColor = COLORS["text_main"]
+                fontUsed = self.fontMain
 
-            th_frame = ctk.CTkFrame(self.thoughts_scroll, fg_color=bg_color, corner_radius=8)
-            th_frame.pack(fill="x", pady=2)
+            thFrame = ctk.CTkFrame(self.thoughtsScroll, fg_color=bgColor, corner_radius=8)
+            thFrame.pack(fill="x", pady=2)
 
             btn = ctk.CTkButton(
-                th_frame, text=thought, fg_color="transparent", text_color=text_color,
-                font=font, hover_color=COLORS["sidebar_active"], anchor="w",
-                command=lambda t=thought: self.select_thought(t)
+                thFrame, text=thought, fg_color="transparent", text_color=textColor,
+                font=fontUsed, hover_color=COLORS["sidebar_active"], anchor="w",
+                command=lambda t=thought: self.selectThought(t)
             )
             btn.pack(side="left", fill="x", expand=True, padx=5, pady=5)
 
+            # Кнопка удаления мысли
             if len(self.thoughts) > 1:
-                del_btn = ctk.CTkButton(
-                    th_frame, text="✕", width=25, height=25, fg_color="transparent", text_color=COLORS["danger"],
-                    hover_color=COLORS["danger_bg"], command=lambda t=thought: self.delete_thought(t)
+                delBtn = ctk.CTkButton(
+                    thFrame, text="✕", width=25, height=25, fg_color="transparent", text_color=COLORS["danger"],
+                    hover_color=COLORS["danger_bg"], command=lambda t=thought: self.deleteThought(t)
                 )
-                del_btn.pack(side="right", padx=5)
+                delBtn.pack(side="right", padx=5)
 
-    def open_calendar(self):
+    def openCalendar(self):
         CalendarWindow(self)
 
-    def select_thought(self, thought):
-        self.current_thought = thought
-        self.header_title.configure(text=self.current_thought)
-        self.render_sidebar()
-        self.render_tasks()
+    def selectThought(self, thought):
+        self.currentThought = thought
+        self.headerTitle.configure(text=self.currentThought)
+        self.renderSidebar()
+        self.renderTasks()
 
-    def add_thought(self):
-        new_thought = self.thought_entry.get().strip()
-        if new_thought != "":
-            if new_thought not in self.thoughts:
-                self.thoughts.append(new_thought)
-                self.thought_entry.delete(0, "end")
-                self._save_state()
-                self.select_thought(new_thought)
+    def addThought(self):
+        newThought = self.thoughtEntry.get().strip()
+        if newThought != "":
+            if newThought not in self.thoughts:
+                self.thoughts.append(newThought)
+                self.thoughtEntry.delete(0, "end")
+                self.saveState()
+                self.selectThought(newThought)
 
-    def delete_thought(self, thought):
+    def deleteThought(self, thought):
         self.thoughts.remove(thought)
         
-        new_tasks = []
+        # Удаляем задачи, связанные с удаленной мыслью
+        newTasks = []
         for t in self.tasks:
             if "thought" in t:
                 if t["thought"] != thought:
-                    new_tasks.append(t)
+                    newTasks.append(t)
             else:
-                new_tasks.append(t)
+                newTasks.append(t)
                 
-        self.tasks = new_tasks
-        self._save_state()
+        self.tasks = newTasks
+        self.saveState()
         
-        if self.current_thought == thought:
-            self.select_thought(self.thoughts[0])
+        # Переключаемся на первую мысль, если удалили текущую
+        if self.currentThought == thought:
+            self.selectThought(self.thoughts[0])
         else:
-            self.render_sidebar()
+            self.renderSidebar()
 
-    def set_filter(self, mode):
-        self.filter_mode = mode
-        self.render_tasks()
+    def setFilter(self, mode):
+        self.filterMode = mode
+        self.renderTasks()
 
-    def sort_tasks(self, current_tasks):
-        priority_weight = {"Срочная": 0, "Обычная": 1, "Низкая": 2}
+    def sortTasks(self, currentTasks):
+        priorityWeight = {"Срочная": 0, "Обычная": 1, "Низкая": 2}
         
-        def sort_key(t):
-            is_done = t["done"]
+        def sortKey(t):
+            isDone = t["done"]
             
-            is_pinned = False
+            isPinned = False
             if "pinned" in t:
                 if t["pinned"] == True:
-                    is_pinned = True
+                    isPinned = True
                     
-            not_pinned = not is_pinned
+            notPinned = not isPinned
             
-            if t["priority"] in priority_weight:
-                priority = priority_weight[t["priority"]]
+            if t["priority"] in priorityWeight:
+                priority = priorityWeight[t["priority"]]
             else:
                 priority = 1
                 
-            task_id_negative = -t["id"]
+            taskIdNegative = -t["id"]
             
-            return (is_done, not_pinned, priority, task_id_negative)
+            return (isDone, notPinned, priority, taskIdNegative)
             
-        current_tasks.sort(key=sort_key)
+        currentTasks.sort(key=sortKey)
 
-    def add_task(self):
-        text = self.entry.get().strip()
+    def addTask(self):
+        text = self.taskEntry.get().strip()
         if text == "":
-            self.entry.focus()
+            self.taskEntry.focus()
             return
 
+        # Создание объекта новой задачи
         task = {
-            "id": self.next_id,
+            "id": self.nextId,
             "text": text,
             "done": False,
-            "priority": self.priority_var.get(),
+            "priority": self.priorityVar.get(),
             "created": datetime.now().strftime("%d.%m.%Y %H:%M"),
-            "thought": self.current_thought,
+            "thought": self.currentThought,
             "pinned": False
         }
         self.tasks.append(task)
-        self.next_id += 1
-        self.entry.delete(0, "end")
-        self._save_state()
-        self.render_tasks()
+        self.nextId += 1
+        self.taskEntry.delete(0, "end")
+        self.saveState()
+        self.renderTasks()
 
-    def toggle_task(self, task_id):
+    def toggleTask(self, taskId):
+        # Меняем статус выполнения
         for t in self.tasks:
-            if t["id"] == task_id:
+            if t["id"] == taskId:
                 if t["done"] == True:
                     t["done"] = False
                 else:
                     t["done"] = True
                 break
-        self._save_state()
-        self.render_tasks()
+        self.saveState()
+        self.renderTasks()
 
-    def toggle_pin(self, task_id):
+    def togglePin(self, taskId):
+        # Изменяем статус закрепления
         for t in self.tasks:
-            if t["id"] == task_id:
+            if t["id"] == taskId:
                 if "pinned" in t:
                     if t["pinned"] == True:
                         t["pinned"] = False
@@ -510,126 +543,132 @@ class TodoApp(ctk.CTk):
                 else:
                     t["pinned"] = True
                 break
-        self._save_state()
-        self.render_tasks()
+        self.saveState()
+        self.renderTasks()
 
-    def edit_task(self, task_id):
+    def editTask(self, taskId):
+        # Открытие окна для редактирования
         for t in self.tasks:
-            if t["id"] == task_id:
+            if t["id"] == taskId:
                 dialog = EditTaskDialog(self, t["text"])
                 if dialog.result != None:
                     t["text"] = dialog.result
-                    self._save_state()
-                    self.render_tasks()
+                    self.saveState()
+                    self.renderTasks()
                 break
 
-    def delete_task(self, task_id):
-        new_tasks = []
+    def deleteTask(self, taskId):
+        newTasks = []
         for t in self.tasks:
-            if t["id"] != task_id:
-                new_tasks.append(t)
-        self.tasks = new_tasks
-        self._save_state()
-        self.render_tasks()
+            if t["id"] != taskId:
+                newTasks.append(t)
+        self.tasks = newTasks
+        self.saveState()
+        self.renderTasks()
 
-    def clear_done(self):
-        new_tasks = []
+    def clearDoneTasks(self):
+        newTasks = []
         for t in self.tasks:
-            is_current_thought = False
+            isCurrentThought = False
             if "thought" in t:
-                if t["thought"] == self.current_thought:
-                    is_current_thought = True
+                if t["thought"] == self.currentThought:
+                    isCurrentThought = True
                     
-            if t["done"] == True and is_current_thought == True:
+            if t["done"] == True and isCurrentThought == True:
                 continue
             
-            new_tasks.append(t)
+            newTasks.append(t)
             
-        self.tasks = new_tasks
-        self._save_state()
-        self.render_tasks()
+        self.tasks = newTasks
+        self.saveState()
+        self.renderTasks()
 
-    def render_tasks(self):
-        for widget in self.scrollable_frame.winfo_children():
+    def renderTasks(self):
+        # Очистка текущих задач с экрана
+        for widget in self.scrollableFrame.winfo_children():
             widget.destroy()
 
-        current_thought_tasks = []
+        currentThoughtTasks = []
         for t in self.tasks:
             if "thought" in t:
-                if t["thought"] == self.current_thought:
-                    current_thought_tasks.append(t)
+                if t["thought"] == self.currentThought:
+                    currentThoughtTasks.append(t)
             else:
-                if self.current_thought == "Главная мысль":
-                    current_thought_tasks.append(t)
+                if self.currentThought == "Главная мысль":
+                    currentThoughtTasks.append(t)
 
-        self.sort_tasks(current_thought_tasks)
+        self.sortTasks(currentThoughtTasks)
 
-        done_count = 0
-        for t in current_thought_tasks:
+        # Подсчет выполненных задач
+        doneCount = 0
+        for t in currentThoughtTasks:
             if t["done"] == True:
-                done_count += 1
+                doneCount += 1
                 
-        total_tasks = len(current_thought_tasks)
-        self.counter_label.configure(text=f"Выполнено: {done_count} из {total_tasks}")
+        totalTasks = len(currentThoughtTasks)
+        self.counterLabel.configure(text=f"Выполнено: {doneCount} из {totalTasks}")
 
-        visible = []
-        if self.filter_mode == "Активные":
-            for t in current_thought_tasks:
+        # Применение фильтров
+        visibleTasks = []
+        if self.filterMode == "Активные":
+            for t in currentThoughtTasks:
                 if t["done"] == False:
-                    visible.append(t)
-        elif self.filter_mode == "Выполненные":
-            for t in current_thought_tasks:
+                    visibleTasks.append(t)
+        elif self.filterMode == "Выполненные":
+            for t in currentThoughtTasks:
                 if t["done"] == True:
-                    visible.append(t)
+                    visibleTasks.append(t)
         else:
-            visible = current_thought_tasks
+            visibleTasks = currentThoughtTasks
 
-        if len(visible) == 0:
-            empty_frame = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
-            empty_frame.pack(fill="both", expand=True, pady=60)
+        # Заглушка, если задач нет
+        if len(visibleTasks) == 0:
+            emptyFrame = ctk.CTkFrame(self.scrollableFrame, fg_color="transparent")
+            emptyFrame.pack(fill="both", expand=True, pady=60)
 
-            img_path = os.path.join(os.path.dirname(__file__), "empty.png")
+            imgPath = os.path.join(os.path.dirname(__file__), "empty.png")
             try:
-                if os.path.exists(img_path):
-                    img = Image.open(img_path)
-                    ctk_img = ctk.CTkImage(light_image=img, size=(120, 120))
-                    img_lbl = ctk.CTkLabel(empty_frame, image=ctk_img, text="")
-                    img_lbl.pack(pady=(0, 15))
+                if os.path.exists(imgPath):
+                    img = Image.open(imgPath)
+                    ctkImg = ctk.CTkImage(light_image=img, size=(120, 120))
+                    imgLbl = ctk.CTkLabel(emptyFrame, image=ctkImg, text="")
+                    imgLbl.pack(pady=(0, 15))
                 else:
-                    ctk.CTkLabel(empty_frame, text="🌿", font=ctk.CTkFont(size=60)).pack(pady=(0, 10))
+                    ctk.CTkLabel(emptyFrame, text="🌿", font=ctk.CTkFont(size=60)).pack(pady=(0, 10))
             except Exception:
                 pass
 
             ctk.CTkLabel(
-                empty_frame, text="В этой мысли пока пусто", 
+                emptyFrame, text="В этой мысли пока пусто", 
                 font=ctk.CTkFont(family="Segoe UI", size=18, weight="bold"), text_color=COLORS["text_main"]
             ).pack()
 
             ctk.CTkLabel(
-                empty_frame, text="Добавьте свою первую задачу выше", 
-                font=self.font_main, text_color=COLORS["text_muted"]
+                emptyFrame, text="Добавьте свою первую задачу выше", 
+                font=self.fontMain, text_color=COLORS["text_muted"]
             ).pack()
             return
 
-        for task in visible:
-            self._render_task(task)
+        for task in visibleTasks:
+            self.renderSingleTask(task)
 
-    def _render_task(self, task):
-        is_pinned = False
+    def renderSingleTask(self, task):
+        isPinned = False
         if "pinned" in task:
             if task["pinned"] == True:
-                is_pinned = True
+                isPinned = True
 
-        frame = ctk.CTkFrame(
-            self.scrollable_frame, fg_color=COLORS["surface"], 
+        taskFrame = ctk.CTkFrame(
+            self.scrollableFrame, fg_color=COLORS["surface"], 
             corner_radius=10, border_width=1, border_color=COLORS["border"]
         )
-        frame.pack(fill="x", padx=10, pady=(0, 8))
+        taskFrame.pack(fill="x", padx=10, pady=(0, 8))
 
+        # Чекбокс выполнения
         check = ctk.CTkCheckBox(
-            frame, text="", width=24, height=24, corner_radius=6,
+            taskFrame, text="", width=24, height=24, corner_radius=6,
             fg_color=COLORS["primary"], hover_color=COLORS["primary_hover"], border_color=COLORS["border"],
-            command=lambda tid=task["id"]: self.toggle_task(tid)
+            command=lambda tid=task["id"]: self.toggleTask(tid)
         )
         
         if task["done"] == True:
@@ -637,54 +676,60 @@ class TodoApp(ctk.CTk):
             
         check.pack(side="left", padx=(15, 5), pady=15)
 
-        del_btn = ctk.CTkButton(
-            frame, text="✕", width=30, height=30, fg_color="transparent", text_color=COLORS["danger"],
-            hover_color=COLORS["danger_bg"], font=self.font_main, command=lambda tid=task["id"]: self.delete_task(tid)
+        # Кнопка удаления
+        delBtn = ctk.CTkButton(
+            taskFrame, text="✕", width=30, height=30, fg_color="transparent", text_color=COLORS["danger"],
+            hover_color=COLORS["danger_bg"], font=self.fontMain, command=lambda tid=task["id"]: self.deleteTask(tid)
         )
-        del_btn.pack(side="right", padx=(2, 15))
+        delBtn.pack(side="right", padx=(2, 15))
 
-        edit_btn = ctk.CTkButton(
-            frame, text="✎", width=30, height=30, fg_color="transparent", text_color=COLORS["text_muted"],
-            hover_color=COLORS["border"], font=self.font_main, command=lambda tid=task["id"]: self.edit_task(tid)
+        # Кнопка редактирования
+        editBtn = ctk.CTkButton(
+            taskFrame, text="✎", width=30, height=30, fg_color="transparent", text_color=COLORS["text_muted"],
+            hover_color=COLORS["border"], font=self.fontMain, command=lambda tid=task["id"]: self.editTask(tid)
         )
-        edit_btn.pack(side="right", padx=2)
+        editBtn.pack(side="right", padx=2)
 
-        if is_pinned == True:
-            pin_icon = "★"
-            pin_color = COLORS["warning"]
+        # Кнопка закрепления (звездочка)
+        if isPinned == True:
+            pinIcon = "★"
+            pinColor = COLORS["warning"]
         else:
-            pin_icon = "☆"
-            pin_color = COLORS["text_muted"]
+            pinIcon = "☆"
+            pinColor = COLORS["text_muted"]
         
-        pin_btn = ctk.CTkButton(
-            frame, text=pin_icon, width=30, height=30, fg_color="transparent", text_color=pin_color,
+        pinBtn = ctk.CTkButton(
+            taskFrame, text=pinIcon, width=30, height=30, fg_color="transparent", text_color=pinColor,
             hover_color=COLORS["warning_bg"], font=ctk.CTkFont(size=18), 
-            command=lambda tid=task["id"]: self.toggle_pin(tid)
+            command=lambda tid=task["id"]: self.togglePin(tid)
         )
-        pin_btn.pack(side="right", padx=2)
+        pinBtn.pack(side="right", padx=2)
 
+        # Бейдж приоритета
         if task["priority"] in BADGES:
-            p_colors = BADGES[task["priority"]]
+            pColors = BADGES[task["priority"]]
         else:
-            p_colors = BADGES["Обычная"]
+            pColors = BADGES["Обычная"]
             
         badge = ctk.CTkLabel(
-            frame, text=task["priority"], font=self.font_small, fg_color=p_colors["bg"],
-            text_color=p_colors["text"], corner_radius=6, width=70, height=24
+            taskFrame, text=task["priority"], font=self.fontSmall, fg_color=pColors["bg"],
+            text_color=pColors["text"], corner_radius=6, width=70, height=24
         )
         badge.pack(side="right", padx=(10, 5))
 
-        text_frame = ctk.CTkFrame(frame, fg_color="transparent")
-        text_frame.pack(side="left", fill="x", expand=True, padx=5)
+        textFrame = ctk.CTkFrame(taskFrame, fg_color="transparent")
+        textFrame.pack(side="left", fill="x", expand=True, padx=5)
 
+        # Изменение шрифта, если задача выполнена
         if task["done"] == True:
-            lbl_font = self.font_strike
-            lbl_color = COLORS["text_muted"]
+            lblFont = self.fontStrike
+            lblColor = COLORS["text_muted"]
         else:
-            lbl_font = self.font_main
-            lbl_color = COLORS["text_main"]
+            lblFont = self.fontMain
+            lblColor = COLORS["text_main"]
 
-        ctk.CTkLabel(text_frame, text=task["text"], font=lbl_font, text_color=lbl_color, anchor="w", justify="left").pack(fill="x")
+        ctk.CTkLabel(textFrame, text=task["text"], font=lblFont, text_color=lblColor, anchor="w", justify="left").pack(fill="x")
 
+        # Вывод даты создания
         if "created" in task:
-            ctk.CTkLabel(text_frame, text=task["created"], font=self.font_small, text_color=COLORS["text_muted"], anchor="w").pack(fill="x")
+            ctk.CTkLabel(textFrame, text=task["created"], font=self.fontSmall, text_color=COLORS["text_muted"], anchor="w").pack(fill="x")
