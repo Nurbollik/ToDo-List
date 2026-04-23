@@ -2,7 +2,7 @@
 
 ## Group Members
 
-> _Add your group member names here_
+> _Bekbolotov Nurbolot, Arapbaev Nurzhigit, Kadyrov Sulaiman_
 
 ---
 
