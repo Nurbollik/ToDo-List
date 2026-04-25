@@ -4,7 +4,7 @@ import calendar
 from datetime import datetime
 from PIL import Image
 
-from config import COLORS, BADGES, ALL_LANGS
+from config import COLORS, BADGES, ALL_LANGS, LANG_ORDER, LANG_DISPLAY
 from data_manager import load_data, save_data
 
 
@@ -321,9 +321,11 @@ class TodoApp(ctk.CTk):
         )
         self.headerTitle.pack(side="left")
 
-        # Кнопка смены языка
+        # Кнопка смены языка — показываем следующий язык в цикле
+        nextLangIndex = (LANG_ORDER.index(self.lang)) % len(LANG_ORDER)
+        nextLangLabel = LANG_DISPLAY[LANG_ORDER[nextLangIndex]]
         self.langBtn = ctk.CTkButton(
-            headerFrame, text=self.L["lang_btn"], width=45, height=35,
+            headerFrame, text=nextLangLabel, width=45, height=35,
             fg_color="transparent", text_color=COLORS["text_main"],
             hover_color=COLORS["border"],
             font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
@@ -421,11 +423,9 @@ class TodoApp(ctk.CTk):
         self.saveState()
 
     def toggleLang(self):
-        # Переключаем язык между ru и en
-        if self.lang == "ru":
-            self.lang = "en"
-        else:
-            self.lang = "ru"
+        # Переключаем язык по кругу: ru → en → ky → es → zh → ru
+        currentIndex = LANG_ORDER.index(self.lang) if self.lang in LANG_ORDER else 0
+        self.lang = LANG_ORDER[(currentIndex + 1) % len(LANG_ORDER)]
 
         self.L = ALL_LANGS[self.lang]
         self.data["lang"] = self.lang
@@ -520,11 +520,11 @@ class TodoApp(ctk.CTk):
         self.renderTasks()
 
     def sortTasks(self, currentTasks):
-        # Веса приоритетов на обоих языках
+        # Веса по каноническим ключам — не зависят от языка
         priorityWeight = {
-            self.L["priority_urgent"]: 0,
-            self.L["priority_normal"]: 1,
-            self.L["priority_low"]: 2
+            "urgent": 0,
+            "normal": 1,
+            "low": 2,
         }
 
         def sortKey(t):
@@ -553,11 +553,19 @@ class TodoApp(ctk.CTk):
             self.taskEntry.focus()
             return
 
+        # Переводим локализованный приоритет в канонический ключ
+        localizedPriority = self.priorityVar.get()
+        canonicalPriority = {
+            self.L["priority_urgent"]: "urgent",
+            self.L["priority_normal"]: "normal",
+            self.L["priority_low"]: "low",
+        }.get(localizedPriority, "normal")
+
         task = {
             "id": self.nextId,
             "text": text,
             "done": False,
-            "priority": self.priorityVar.get(),
+            "priority": canonicalPriority,
             "created": datetime.now().strftime("%d.%m.%Y %H:%M"),
             "thought": self.currentThought,
             "pinned": False
@@ -743,14 +751,13 @@ class TodoApp(ctk.CTk):
             command=lambda tid=task["id"]: self.togglePin(tid)
         ).pack(side="right", padx=2)
 
-        # Бейдж приоритета. ищем по русскому и английскому ключу
-        if task["priority"] in BADGES:
-            pColors = BADGES[task["priority"]]
-        else:
-            pColors = BADGES["Обычная"]
+        # Бейдж приоритета: ключ canonical, отображаем локализованное название
+        canonical = task.get("priority", "normal")
+        pColors = BADGES.get(canonical, BADGES["normal"])
+        localizedLabel = self.L.get("priority_" + canonical, canonical)
 
         ctk.CTkLabel(
-            taskFrame, text=task["priority"], font=self.fontSmall,
+            taskFrame, text=localizedLabel, font=self.fontSmall,
             fg_color=pColors["bg"], text_color=pColors["text"],
             corner_radius=6, width=70, height=24
         ).pack(side="right", padx=(10, 5))

@@ -1,6 +1,6 @@
 import json
 import os
-from config import DATA_FILE
+from config import DATA_FILE, PRIORITY_MIGRATION
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -11,6 +11,7 @@ def load_data():
                 new_data = {"thoughts": [" "], "tasks": [], "theme": "light", "lang": "ru"}
                 for task in data:
                     task["thought"] = " "
+                    task["priority"] = PRIORITY_MIGRATION.get(task.get("priority", "normal"), "normal")
                     new_data["tasks"].append(task)
                 return new_data
 
@@ -20,6 +21,12 @@ def load_data():
             # Если язык не сохранен ставим русский по умолчанию
             if "lang" not in data:
                 data["lang"] = "ru"
+
+            # Мигрируем старые локализованные приоритеты в канонические ключи
+            if "tasks" in data:
+                for task in data["tasks"]:
+                    old = task.get("priority", "normal")
+                    task["priority"] = PRIORITY_MIGRATION.get(old, "normal")
 
             return data
 
