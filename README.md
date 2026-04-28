@@ -1,76 +1,172 @@
-# Planterra 🪷 — Thoughts & Tasks Planner
+# Planterra 🪷
 
-## Group Members
+> A desktop thoughts & tasks planner built with Python and CustomTkinter.
 
-> _Bekbolotov Nurbolot, Arapbaev Nurzhigit, Kadyrov Sulaiman_
-
----
-
-## Project Description
-
-Planterra is a desktop task management application built with Python and CustomTkinter. It lets users organize their tasks inside named "thoughts" — topic-based workspaces — making it easy to group related to-dos together. The app supports priorities, pinning, filtering, a built-in calendar, dark/light themes, and bilingual (Russian/English) interface switching.
+**Authors:** Bekbolotov Nurbolot · Arapbaev Nurzhigit · Kadyrov Sulaiman
 
 ---
 
-## Problem Statement
+## Table of Contents
 
-Most to-do applications treat tasks as a flat, undifferentiated list. This makes it hard to separate tasks by context — for example, keeping work tasks, study goals, and personal errands in the same place without confusion. Users also often switch between languages or prefer different visual themes, yet many lightweight apps offer no such flexibility.
+- [About](#about)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the App](#running-the-app)
+- [Project Structure](#project-structure)
+- [Data Storage](#data-storage)
+- [Localization](#localization)
+- [References](#references)
 
 ---
 
-## Solution Overview
+## About
 
-Planterra introduces the concept of **"thoughts"** — named sections that act as independent workspaces for tasks. Each thought has its own task list with priority levels, completion tracking, and pin-to-top support. The calendar lets users create date-labelled thoughts instantly by clicking a day. All state is persisted locally in a JSON file, so data survives between sessions. The entire UI rebuilds dynamically when the user switches language or theme, with no restart required.
+Most to-do apps dump everything into a single flat list. Planterra takes a different approach — it organizes tasks inside named **"thoughts"**, which act as independent topic-based workspaces. Need to keep work tasks, study goals, and personal errands completely separate? Create a thought for each. Switch between them from the sidebar with one click.
+
+The app runs entirely on your machine. No accounts, no cloud sync — all data lives in a local `tasks.json` file that persists between sessions.
 
 ---
 
-## Technologies Used
+## Features
+
+| Feature | Description |
+|---|---|
+| **Thoughts (workspaces)** | Create named sections; each has its own independent task list |
+| **Task priorities** | Assign Urgent / Normal / Low priority; tasks are sorted automatically |
+| **Pin to top** | Star important tasks so they always appear first |
+| **Filters** | Instantly switch between All, Active, and Completed views |
+| **Edit & Delete** | Inline editing dialog and one-click deletion |
+| **Clear completed** | Remove all done tasks from the current thought in one action |
+| **Calendar integration** | Click any date in the built-in calendar to create a date-labelled thought |
+| **Dark / Light theme** | Toggle at any time; preference is saved automatically |
+| **5 interface languages** | Russian, English, Kyrgyz, Spanish, Chinese — switch without restarting |
+| **Persistent storage** | Tasks, thoughts, theme, and language are all saved locally in JSON |
+
+---
+
+## Tech Stack
 
 | Technology | Purpose |
 |---|---|
-| Python 3.10+ | Core programming language |
-| CustomTkinter | Modern themed GUI framework |
-| Pillow (PIL) | Image loading for empty-state illustration |
+| Python 3.10+ | Core language |
+| [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) | Modern themed GUI framework |
+| Pillow (PIL) | Image loading for the empty-state illustration |
 | JSON | Local data persistence |
 | `calendar` (stdlib) | Calendar grid generation |
 | `datetime` (stdlib) | Task timestamps and date selection |
-| `os` (stdlib) | File path resolution |
+| `os` (stdlib) | Cross-platform file path resolution |
 
 ---
 
-## Instructions to Run the Project
+## Getting Started
 
-### 1. Prerequisites
+### Prerequisites
 
-Make sure Python 3.10 or newer is installed.
+- Python **3.10** or newer — [download here](https://www.python.org/downloads/)
 
-### 2. Install dependencies
+### Installation
+
+Clone or download the repository, then install the two dependencies:
 
 ```bash
 pip install customtkinter pillow
 ```
 
-### 3. Run the application
-
-Place `main.py` and `tasks.json` in the same folder, then run:
+### Running the App
 
 ```bash
 python main.py
 ```
 
-> **Note:** `tasks.json` is created automatically on first launch if it does not exist. Optionally place an `empty.png` image (120×120 px) in the same folder to show a custom illustration when a thought has no tasks.
+> **Tip:** Place an `empty.png` image (120×120 px) in the project folder to show a custom illustration when a thought has no tasks. If the file is absent, the app falls back to a 🌿 emoji.
 
 ---
 
-## Key Features
+## Project Structure
 
-- **Thoughts (workspaces)** — Create named sections to group related tasks; each thought has its own independent task list.
-- **Task priorities** — Assign Urgent / Normal / Low priority to any task; tasks are sorted automatically.
-- **Pin to top** — Pin important tasks so they always appear at the top of the list.
-- **Filters** — Quickly switch between All, Active, and Completed views.
-- **Edit & Delete** — Inline editing dialog and one-click task deletion.
-- **Clear completed** — Remove all done tasks from the current thought in one click.
-- **Calendar integration** — Open the built-in calendar and click any date to create a date-labelled thought instantly.
-- **Dark / Light theme** — Toggle between themes at any time; preference is saved automatically.
-- **Bilingual UI (RU / EN)** — Switch the entire interface language between Russian and English without restarting.
-- **Persistent storage** — All tasks, thoughts, theme, and language settings are saved locally in `tasks.json`.
+```
+planterra/
+├── main.py           # Entry point — launches the app
+├── ui.py             # All UI classes (main window, calendar, edit dialog)
+├── data_manager.py   # Load / save JSON data + priority migration logic
+├── config.py         # Colors, badges, language dictionaries, constants
+├── tasks.json        # Local data file (auto-created on first run)
+└── empty.png         # Optional empty-state illustration (120×120 px)
+```
+
+**`main.py`** — just calls `TodoApp().mainloop()`.
+
+**`ui.py`** — contains three classes:
+- `TodoApp` — the main application window with sidebar, task list, filters, and toolbar.
+- `CalendarWindow` — a modal calendar that creates date-labelled thoughts on day click.
+- `EditTaskDialog` — a small modal for renaming an existing task.
+
+**`data_manager.py`** — handles reading and writing `tasks.json`. Also migrates old localized priority strings (e.g. `"Срочная"`, `"Urgent"`) to the canonical internal keys (`"urgent"`, `"normal"`, `"low"`), so saved data stays valid across language switches.
+
+**`config.py`** — single source of truth for all visual constants and every translated string. Adding a new language means adding one new dictionary here and registering it in `ALL_LANGS`.
+
+---
+
+## Data Storage
+
+All application state is stored in `tasks.json` in the project folder. The file is created automatically on first launch if it does not exist.
+
+Example structure:
+
+```json
+{
+  "thoughts": ["Work", "Study", "📅 28.04.2025"],
+  "tasks": [
+    {
+      "id": 1,
+      "text": "Finish the report",
+      "done": false,
+      "priority": "urgent",
+      "created": "28.04.2025 10:30",
+      "thought": "Work",
+      "pinned": true
+    }
+  ],
+  "theme": "dark",
+  "lang": "en"
+}
+```
+
+Priority values stored in JSON are always **canonical** (`urgent` / `normal` / `low`), regardless of the display language. This means you can switch the interface language and all existing tasks will display correctly.
+
+---
+
+## Localization
+
+The app ships with five languages switchable at runtime from the toolbar:
+
+| Code | Language |
+|---|---|
+| `ru` | Russian |
+| `en` | English |
+| `ky` | Kyrgyz |
+| `es` | Spanish |
+| `zh` | Chinese (Simplified) |
+
+All translated strings live in `config.py` (`LANG_RU`, `LANG_EN`, etc.) under a shared set of keys. The active language dictionary is stored in `app.L` and referenced throughout `ui.py`. Switching language rebuilds the entire UI immediately — no restart required.
+
+To add a new language, create a new dictionary following the same key structure and register it in `ALL_LANGS` and `LANG_ORDER`.
+
+---
+
+## References
+
+**Libraries & Frameworks**
+
+- CustomTkinter — GitHub: https://github.com/TomSchimansky/CustomTkinter
+- CustomTkinter — Official Documentation & Tutorial: https://customtkinter.tomschimansky.com/
+- Pillow (PIL) — https://python-pillow.org
+- Python 3 Standard Library (`calendar`, `datetime`, `json`, `os`) — https://docs.python.org/3/library/
+
+**Video Tutorial**
+
+- *Python CustomTkinter Full Course* — YouTube: https://youtu.be/Y01r643ckfI?si=X8688I-W1pfSQYIV
